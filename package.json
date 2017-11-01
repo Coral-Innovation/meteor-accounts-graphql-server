@@ -1,5 +1,6 @@
 {
   "name": "meteor-accounts-graphql-server",
+  "version": "1.0.0",
   "scripts": {
     "start": "meteor run"
   },
