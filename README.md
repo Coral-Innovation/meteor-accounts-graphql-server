@@ -4,9 +4,9 @@ Exposes the functionality of the [`accounts-password`](http://docs.meteor.com/ap
 
 ### Quick start
 
-- Set MONGO_URL
-- `meteor`
-- 
+- Run `export MONGO_URL="mongodb://user:password@myserver.com:10139"`
+- Run `meteor`
+- Go to http://localhost:3000/graphiql
 
 ### Atmosphere packages
 
