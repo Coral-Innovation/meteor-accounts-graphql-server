@@ -4,8 +4,10 @@ Exposes the functionality of the [`accounts-password`](http://docs.meteor.com/ap
 
 ### Quick start
 
-- Run `export MONGO_URL="mongodb://user:password@myserver.com:10139"`
-- Run `meteor`
+- `git clone https://github.com/Coral-Innovation/meteor-accounts-graphql-server.git`
+- `cd meteor-accounts-graphql-server`
+- `export MONGO_URL="mongodb://user:password@myserver.com:10139"`
+- `meteor`
 - Go to http://localhost:3000/graphiql
 
 ### Atmosphere packages
