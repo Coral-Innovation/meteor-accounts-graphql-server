@@ -1,6 +1,5 @@
 {
   "name": "meteor-accounts-graphql-server",
-  "private": true,
   "scripts": {
     "start": "meteor run"
   },
