@@ -16,6 +16,10 @@ const typeDefs = `
   type Mutation {
     loginWithPassword(email: String!, password: String!): LoginResponse
   }
+
+  type Query {
+    ping: String
+  }
 `;
 
 // Inspiration for resolvers: 
@@ -49,6 +53,9 @@ const resolvers = {
         });
       });
     }
+  },
+  Query: {
+    ping: () => "pong"
   }
 };
 
