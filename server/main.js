@@ -13,7 +13,7 @@ const typeDefs = `
     loginTokenExpires: Date!
   }
 
-  type Query {
+  type Mutation {
     loginWithPassword(email: String!, password: String!): LoginResponse
   }
 `;
@@ -24,7 +24,7 @@ const typeDefs = `
 
 const resolvers = {
   Date: GraphQLDateTime,
-  Query: {
+  Mutation: {
     loginWithPassword: (obj, args, context) => {
       return new Promise((resolve, reject) => {
         const user = Accounts.findUserByEmail(args.email);
