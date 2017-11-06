@@ -15,6 +15,7 @@ const typeDefs = `
 
   type Mutation {
     loginWithPassword(email: String!, password: String!): LoginResponse
+    logout(userId: String!, loginToken: String!): Boolean
   }
 
   type Query {
@@ -52,6 +53,14 @@ const resolvers = {
           loginTokenExpires: Accounts._tokenExpiration(when)
         });
       });
+    },
+    logout: (obj, { userId, loginToken }) => {
+      const hashedToken = Accounts._hashLoginToken(loginToken);
+      const matched = Meteor.users.update(userId, {
+        $pull: {  "services.resume.loginTokens": { hashedToken } }
+      });
+
+      return matched === 1;
     }
   },
   Query: {
