@@ -54,6 +54,8 @@ const resolvers = {
         });
       });
     },
+    // Meteor accounts-base retrieves the loginToken from the current LiveData connection.
+    // Since we don't use this, we need to provide the loginToken as an argument.
     logout: (obj, { userId, loginToken }) => {
       const hashedToken = Accounts._hashLoginToken(loginToken);
       const matched = Meteor.users.update(userId, {
