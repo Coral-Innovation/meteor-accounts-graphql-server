@@ -8,12 +8,14 @@
     "apollo-client": "^2.0.1",
     "apollo-server-express": "^1.2.0",
     "babel-runtime": "^6.26.0",
+    "bcrypt": "^1.0.3",
     "body-parser": "^1.18.2",
     "express": "^4.16.2",
     "graphql": "^0.11.7",
     "graphql-iso-date": "^3.3.0",
     "graphql-tools": "^2.7.0",
-    "meteor-node-stubs": "^0.3.2"
+    "meteor-node-stubs": "^0.3.2",
+    "node-fetch": "^1.7.3"
   },
   "devDependencies": {
     "eslint": "^4.10.0",

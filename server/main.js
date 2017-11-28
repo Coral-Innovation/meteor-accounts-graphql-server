@@ -1,11 +1,17 @@
 import { createApolloServer } from "meteor/apollo";
 import { Random } from "meteor/random";
 
+import * as bcrypt from "bcrypt";
 import { GraphQLDateTime } from "graphql-iso-date";
 import { makeExecutableSchema } from "graphql-tools";
 
 const typeDefs = `
   scalar Date
+
+  input HashedPassword {
+    algorithm: String!
+    digest: String!
+  }
 
   type LoginResponse {
     userId: ID!
@@ -14,7 +20,8 @@ const typeDefs = `
   }
 
   type Mutation {
-    loginWithPassword(email: String!, password: String!): LoginResponse
+    changePassword(userId: String!, oldPassword: HashedPassword!, newPassword: HashedPassword!): Boolean
+    loginWithPassword(email: String!, password: HashedPassword!): LoginResponse
     logout(userId: String!, loginToken: String!): Boolean
   }
 
@@ -26,36 +33,61 @@ const typeDefs = `
 // Inspiration for resolvers: 
 // https://github.com/davidyaha/apollo-accounts-server/blob/master/server/imports/models/user-account.js
 // https://github.com/stubailo/meteor-rest/blob/devel/packages/rest-accounts-password/rest-login.js
+// https://github.com/meteor/meteor/blob/master/packages/accounts-password/password_server.js
 
 const resolvers = {
   Date: GraphQLDateTime,
   Mutation: {
-    loginWithPassword: (obj, args, context) => {
+    changePassword: (obj, { userId, oldPassword, newPassword }) => {
       return new Promise((resolve, reject) => {
-        const user = Accounts.findUserByEmail(args.email);
+        const user = Meteor.users.findOne(userId);
         if (!user) {
-          reject(new Error("Couldn't find user."));
+          reject(new Error("Couldn't find user"));
         }
-        
-        const { userId, error } = Accounts._checkPassword(user, args.password);
+  
+        const { error } = Accounts._checkPassword(user, oldPassword);
         if (error) {
-          reject(error);
+          reject(new Error("Old password incorrect"));
         }
-        
-        const token = Random.secret();
-        const when = new Date();
-        Accounts._insertLoginToken(user._id, { token, when });
+  
+        bcrypt.hash(newPassword.digest, 10, (err, hash) => {
+          if (err) {
+            reject(new Error("Couldn't hash password"));
+          }
 
-        // Return according to LocalStorage keys "Meteor.userId", "Meteor.loginToken", "Meteor.loginTokenExpires"
-        resolve({
-          userId: user._id,
-          loginToken: token,
-          loginTokenExpires: Accounts._tokenExpiration(when)
+          Meteor.users.update(userId, {
+            $set: { "services.password.bcrypt": hash },
+            $unset: { "services.password.reset": 1 }  // Avoid conflicts with password reset
+          });
+
+          resolve(true);
         });
       });
     },
-    // Meteor accounts-base retrieves the loginToken from the current LiveData connection.
-    // Since we don't use this, we need to provide the loginToken as an argument.
+    loginWithPassword: (obj, { email, password }, context) => {
+      const user = Accounts.findUserByEmail(email);
+      if (!user) {
+        throw new Error("Couldn't find user.");
+      }
+      
+      const { userId, error } = Accounts._checkPassword(user, password);
+      if (error) {
+        throw new Error(error);
+      }
+      
+      const token = Random.secret();
+      const when = new Date();
+      Accounts._insertLoginToken(user._id, { token, when });
+
+      // Return according to LocalStorage keys "Meteor.userId", "Meteor.loginToken", "Meteor.loginTokenExpires"
+      return {
+        userId: user._id,
+        loginToken: token,
+        loginTokenExpires: Accounts._tokenExpiration(when)
+      };
+    },
+    // Meteor accounts-base retrieves the loginToken and userId from the current LiveData connection.
+    // Since we don't use this, we need to provide the loginToken and userId as arguments.
     logout: (obj, { userId, loginToken }) => {
       const hashedToken = Accounts._hashLoginToken(loginToken);
       const matched = Meteor.users.update(userId, {
