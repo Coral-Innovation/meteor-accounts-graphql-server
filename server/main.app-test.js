@@ -2,14 +2,13 @@ import fetch from "node-fetch";
 import assert from "assert";
 import crypto from "crypto";
 
-import { password, email } from "./fixtures";
+import { password, email, loginToken } from "./fixtures";
 
 const hash = crypto.createHash("sha256");
 const oldPassword = {
   algorithm: "sha-256",
   digest: hash.update(password).digest("hex")
 };
-const userId = Accounts.findUserByEmail(email)._id;
 
 describe("Schema", function() {
   describe("Mutations", function() {
@@ -18,7 +17,7 @@ describe("Schema", function() {
         it("should throw an error", function(done) {
           const mutation = `mutation {
             changePassword(
-              userId: "foobar", 
+              loginToken: "foobar", 
               oldPassword: { algorithm: "foo", digest: "bar" }, 
               newPassword: { algorithm: "foo", digest: "bar" }
             )
@@ -37,7 +36,7 @@ describe("Schema", function() {
         it("should throw an error", function(done) {
           const mutation = `mutation {
             changePassword(
-              userId: "${userId}",
+              loginToken: "${loginToken}",
               oldPassword: { algorithm: "${oldPassword.algorithm}", digest: "foo"}
               newPassword: { algorithm: "${oldPassword.algorithm}", digest: "bar"}
             )
@@ -56,7 +55,7 @@ describe("Schema", function() {
         it("should return true", function(done) {
           const mutation = `mutation {
             changePassword(
-              userId: "${userId}",
+              loginToken: "${loginToken}",
               oldPassword: { algorithm: "${oldPassword.algorithm}", digest: "${oldPassword.digest}"}
               newPassword: { algorithm: "${oldPassword.algorithm}", digest: "1982uakjnsdau8u21knasd"}
             )
@@ -79,11 +78,8 @@ describe("Schema", function() {
         const query = "{ping}";
         fetch(`http://localhost:3000/graphql?query=${query}`)
           .then((res) => res.json())
-          .then((json) => { 
-            assert(json.data.ping === "pong");
-            done();
-          })
-          .catch((err) => { throw err; });
+          .then((json) => done(assert(json.data.ping === "pong")))
+          .catch((err) => done(err));
       });
     });
   });

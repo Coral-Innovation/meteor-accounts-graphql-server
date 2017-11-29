@@ -20,7 +20,7 @@ const typeDefs = `
   }
 
   type Mutation {
-    changePassword(userId: String!, oldPassword: HashedPassword!, newPassword: HashedPassword!): Boolean
+    changePassword(loginToken: String!, oldPassword: HashedPassword!, newPassword: HashedPassword!): Boolean
     loginWithPassword(email: String!, password: HashedPassword!): LoginResponse
     logout(userId: String!, loginToken: String!): Boolean
   }
@@ -38,8 +38,9 @@ const typeDefs = `
 const resolvers = {
   Date: GraphQLDateTime,
   Mutation: {
-    changePassword: (obj, { userId, oldPassword, newPassword }) => {
-      const user = Meteor.users.findOne(userId);
+    changePassword: (obj, { loginToken, oldPassword, newPassword }) => {
+      const hashedToken = Accounts._hashLoginToken(loginToken);
+      const user = Meteor.users.findOne({ "services.resume.loginTokens.hashedToken": hashedToken });
       if (!user) {
         throw new Error("Couldn't find user");
       }
@@ -50,8 +51,9 @@ const resolvers = {
       }
 
       const hash = bcrypt.hashSync(newPassword.digest, 10);
-      Meteor.users.update(userId, {
-        $set: { "services.password.bcrypt": hash },
+      Meteor.users.update(user._id, {
+        $set: { "services.password.bcrypt": hash }, // Update password
+        $pull: { "services.resume.loginTokens": { hashedToken: { $ne: hashedToken } } }, // Remove deprecated tokens
         $unset: { "services.password.reset": 1 }  // Avoid conflicts with password reset
       });
 
