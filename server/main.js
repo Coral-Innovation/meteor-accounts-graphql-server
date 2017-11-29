@@ -1,7 +1,7 @@
 import { createApolloServer } from "meteor/apollo";
 import { Random } from "meteor/random";
 
-import * as bcrypt from "bcrypt";
+const bcrypt = require("bcryptjs");
 import { GraphQLDateTime } from "graphql-iso-date";
 import { makeExecutableSchema } from "graphql-tools";
 
@@ -39,30 +39,23 @@ const resolvers = {
   Date: GraphQLDateTime,
   Mutation: {
     changePassword: (obj, { userId, oldPassword, newPassword }) => {
-      return new Promise((resolve, reject) => {
-        const user = Meteor.users.findOne(userId);
-        if (!user) {
-          reject(new Error("Couldn't find user"));
-        }
-  
-        const { error } = Accounts._checkPassword(user, oldPassword);
-        if (error) {
-          reject(new Error("Old password incorrect"));
-        }
-  
-        bcrypt.hash(newPassword.digest, 10, (err, hash) => {
-          if (err) {
-            reject(new Error("Couldn't hash password"));
-          }
+      const user = Meteor.users.findOne(userId);
+      if (!user) {
+        throw new Error("Couldn't find user");
+      }
 
-          Meteor.users.update(userId, {
-            $set: { "services.password.bcrypt": hash },
-            $unset: { "services.password.reset": 1 }  // Avoid conflicts with password reset
-          });
+      const { error } = Accounts._checkPassword(user, oldPassword);
+      if (error) {
+        throw new Error("Old password incorrect");
+      }
 
-          resolve(true);
-        });
+      const hash = bcrypt.hashSync(newPassword.digest, 10);
+      Meteor.users.update(userId, {
+        $set: { "services.password.bcrypt": hash },
+        $unset: { "services.password.reset": 1 }  // Avoid conflicts with password reset
       });
+
+      return true;
     },
     loginWithPassword: (obj, { email, password }, context) => {
       const user = Accounts.findUserByEmail(email);

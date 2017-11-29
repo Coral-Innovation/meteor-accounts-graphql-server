@@ -52,27 +52,8 @@ describe("Schema", function() {
         });
       });
 
-      describe("New password is empty string", function() {
-        it("should throw an error", function() {
-          const mutation = `mutation {
-            changePassword(
-              userId: "${userId}",
-              oldPassword: { algorithm: "${oldPassword.algorithm}", digest: "${oldPassword.digest}"}
-              newPassword: { algorithm: "${oldPassword.algorithm}", digest: "  "}
-            )
-          }`;
-          fetch("http://localhost:3000/graphql", { 
-            method: "POST", 
-            body: JSON.stringify({ query: mutation }), 
-            headers: { "Content-Type": "application/json" } 
-          }).then((res) => res.json())
-            .then((json) => done(assert.equal(json.errors[0].message, "Couldn't hash password")))
-            .catch((err) => done(err));
-        });
-      });
-
       describe("changed successfully", function() {
-        it("should return true", function() {
+        it("should return true", function(done) {
           const mutation = `mutation {
             changePassword(
               userId: "${userId}",
