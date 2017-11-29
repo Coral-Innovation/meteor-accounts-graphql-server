@@ -22,7 +22,7 @@ const typeDefs = `
   type Mutation {
     changePassword(loginToken: String!, oldPassword: HashedPassword!, newPassword: HashedPassword!): Boolean
     loginWithPassword(email: String!, password: HashedPassword!): LoginResponse
-    logout(userId: String!, loginToken: String!): Boolean
+    logout(loginToken: String!): Boolean
   }
 
   type Query {
@@ -34,6 +34,9 @@ const typeDefs = `
 // https://github.com/davidyaha/apollo-accounts-server/blob/master/server/imports/models/user-account.js
 // https://github.com/stubailo/meteor-rest/blob/devel/packages/rest-accounts-password/rest-login.js
 // https://github.com/meteor/meteor/blob/master/packages/accounts-password/password_server.js
+
+// Meteor accounts-base retrieves the loginToken from the current LiveData connection.
+// Since we don't use this, we need to provide the loginToken as an argument.
 
 const resolvers = {
   Date: GraphQLDateTime,
@@ -81,11 +84,14 @@ const resolvers = {
         loginTokenExpires: Accounts._tokenExpiration(when)
       };
     },
-    // Meteor accounts-base retrieves the loginToken and userId from the current LiveData connection.
-    // Since we don't use this, we need to provide the loginToken and userId as arguments.
-    logout: (obj, { userId, loginToken }) => {
+    logout: (obj, { loginToken }) => {
       const hashedToken = Accounts._hashLoginToken(loginToken);
-      const matched = Meteor.users.update(userId, {
+      const user = Meteor.users.findOne({ "services.resume.loginTokens.hashedToken": hashedToken });
+      if (!user) {
+        throw new Error("Couldn't find user");
+      }
+
+      const matched = Meteor.users.update(user._id, {
         $pull: {  "services.resume.loginTokens": { hashedToken } }
       });
 
