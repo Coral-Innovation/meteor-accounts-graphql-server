@@ -21,6 +21,7 @@ const typeDefs = `
 
   type Mutation {
     changePassword(loginToken: String!, oldPassword: HashedPassword!, newPassword: HashedPassword!): Boolean
+    createUser(email: String!, password: HashedPassword!): LoginResponse
     loginWithPassword(email: String!, password: HashedPassword!): LoginResponse
     logout(loginToken: String!): Boolean
   }
@@ -62,7 +63,11 @@ const resolvers = {
 
       return true;
     },
-    loginWithPassword: (obj, { email, password }, context) => {
+    createUser: (obj, { email, password }) => {
+      const userId = Accounts.createUser({ email, password });
+      return newLoginToken(userId);
+    },
+    loginWithPassword: (obj, { email, password }) => {
       const user = Accounts.findUserByEmail(email);
       if (!user) {
         throw new Error("Couldn't find user.");
@@ -73,16 +78,7 @@ const resolvers = {
         throw new Error(error);
       }
       
-      const token = Random.secret();
-      const when = new Date();
-      Accounts._insertLoginToken(user._id, { token, when });
-
-      // Return according to LocalStorage keys "Meteor.userId", "Meteor.loginToken", "Meteor.loginTokenExpires"
-      return {
-        userId: user._id,
-        loginToken: token,
-        loginTokenExpires: Accounts._tokenExpiration(when)
-      };
+      return newLoginToken(userId);
     },
     logout: (obj, { loginToken }) => {
       const hashedToken = Accounts._hashLoginToken(loginToken);
@@ -111,3 +107,16 @@ const schema = makeExecutableSchema({
 createApolloServer({
   schema,
 });
+
+function newLoginToken(userId) {
+  const token = Random.secret();
+  const when = new Date();
+  Accounts._insertLoginToken(userId, { token, when });
+
+  // Return according to LocalStorage keys "Meteor.userId", "Meteor.loginToken", "Meteor.loginTokenExpires"
+  return {
+    userId,
+    loginToken: token,
+    loginTokenExpires: Accounts._tokenExpiration(when)
+  };
+}
