@@ -58,11 +58,14 @@ const resolvers = {
 
       const hash = bcrypt.hashSync(newPassword.digest, 10);
       Meteor.users.update(user._id, {
-        $set: { "services.password.bcrypt": hash }, // Update password
+        // Remove deprecated tokens
         $pull: {
           "services.resume.loginTokens": { hashedToken: { $ne: hashedToken } }
-        }, // Remove deprecated tokens
-        $unset: { "services.password.reset": 1 } // Avoid conflicts with password reset
+        },
+        // Update password
+        $set: { "services.password.bcrypt": hash },
+        // Avoid conflicts with password reset
+        $unset: { "services.password.reset": 1 }
       });
 
       return true;
@@ -70,6 +73,11 @@ const resolvers = {
     createUser: (obj, { email, password }) => {
       const userId = Accounts.createUser({ email, password });
       return newLoginToken(userId);
+    },
+    generateResetToken: (obj, { email }) => {
+      const user = Accounts.findUserByEmail(email);
+      const { token } = Accounts.generateResetToken(user._id, email, "reset");
+      return token;
     },
     loginWithPassword: (obj, { email, password }) => {
       const user = Accounts.findUserByEmail(email);
@@ -106,8 +114,8 @@ const resolvers = {
 };
 
 const schema = makeExecutableSchema({
-  typeDefs,
-  resolvers
+  resolvers,
+  typeDefs
 });
 
 createApolloServer({
@@ -121,8 +129,8 @@ function newLoginToken(userId) {
 
   // Return according to LocalStorage keys "Meteor.userId", "Meteor.loginToken", "Meteor.loginTokenExpires"
   return {
-    userId,
     loginToken: token,
-    loginTokenExpires: Accounts._tokenExpiration(when)
+    loginTokenExpires: Accounts._tokenExpiration(when),
+    userId
   };
 }
