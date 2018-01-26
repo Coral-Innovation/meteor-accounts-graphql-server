@@ -31,7 +31,7 @@ const typeDefs = `
   }
 `;
 
-// Inspiration for resolvers: 
+// Inspiration for resolvers:
 // https://github.com/davidyaha/apollo-accounts-server/blob/master/server/imports/models/user-account.js
 // https://github.com/stubailo/meteor-rest/blob/devel/packages/rest-accounts-password/rest-login.js
 // https://github.com/meteor/meteor/blob/master/packages/accounts-password/password_server.js
@@ -44,7 +44,9 @@ const resolvers = {
   Mutation: {
     changePassword: (obj, { loginToken, oldPassword, newPassword }) => {
       const hashedToken = Accounts._hashLoginToken(loginToken);
-      const user = Meteor.users.findOne({ "services.resume.loginTokens.hashedToken": hashedToken });
+      const user = Meteor.users.findOne({
+        "services.resume.loginTokens.hashedToken": hashedToken
+      });
       if (!user) {
         throw new Error("Couldn't find user");
       }
@@ -57,8 +59,10 @@ const resolvers = {
       const hash = bcrypt.hashSync(newPassword.digest, 10);
       Meteor.users.update(user._id, {
         $set: { "services.password.bcrypt": hash }, // Update password
-        $pull: { "services.resume.loginTokens": { hashedToken: { $ne: hashedToken } } }, // Remove deprecated tokens
-        $unset: { "services.password.reset": 1 }  // Avoid conflicts with password reset
+        $pull: {
+          "services.resume.loginTokens": { hashedToken: { $ne: hashedToken } }
+        }, // Remove deprecated tokens
+        $unset: { "services.password.reset": 1 } // Avoid conflicts with password reset
       });
 
       return true;
@@ -72,23 +76,25 @@ const resolvers = {
       if (!user) {
         throw new Error("Couldn't find user.");
       }
-      
+
       const { userId, error } = Accounts._checkPassword(user, password);
       if (error) {
         throw new Error(error);
       }
-      
+
       return newLoginToken(userId);
     },
     logout: (obj, { loginToken }) => {
       const hashedToken = Accounts._hashLoginToken(loginToken);
-      const user = Meteor.users.findOne({ "services.resume.loginTokens.hashedToken": hashedToken });
+      const user = Meteor.users.findOne({
+        "services.resume.loginTokens.hashedToken": hashedToken
+      });
       if (!user) {
         throw new Error("Couldn't find user");
       }
 
       const matched = Meteor.users.update(user._id, {
-        $pull: {  "services.resume.loginTokens": { hashedToken } }
+        $pull: { "services.resume.loginTokens": { hashedToken } }
       });
 
       return matched === 1;
@@ -101,11 +107,11 @@ const resolvers = {
 
 const schema = makeExecutableSchema({
   typeDefs,
-  resolvers,
+  resolvers
 });
 
 createApolloServer({
-  schema,
+  schema
 });
 
 function newLoginToken(userId) {
