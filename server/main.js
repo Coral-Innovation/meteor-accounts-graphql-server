@@ -42,7 +42,7 @@ const typeDefs = `
 const resolvers = {
   Date: GraphQLDateTime,
   Mutation: {
-    changePassword: (obj, { loginToken, oldPassword, newPassword }) => {
+    changePassword(obj, { loginToken, oldPassword, newPassword }) {
       const hashedToken = Accounts._hashLoginToken(loginToken);
       const user = Meteor.users.findOne({
         "services.resume.loginTokens.hashedToken": hashedToken
@@ -70,16 +70,16 @@ const resolvers = {
 
       return true;
     },
-    createUser: (obj, { email, password }) => {
+    createUser(obj, { email, password }) {
       const userId = Accounts.createUser({ email, password });
       return newLoginToken(userId);
     },
-    generateResetToken: (obj, { email }) => {
+    generateResetToken(obj, { email }) {
       const user = Accounts.findUserByEmail(email);
       const { token } = Accounts.generateResetToken(user._id, email, "reset");
       return token;
     },
-    loginWithPassword: (obj, { email, password }) => {
+    loginWithPassword(obj, { email, password }) {
       const user = Accounts.findUserByEmail(email);
       if (!user) {
         throw new Error("Couldn't find user.");
@@ -92,7 +92,7 @@ const resolvers = {
 
       return newLoginToken(userId);
     },
-    logout: (obj, { loginToken }) => {
+    logout(obj, { loginToken }) {
       const hashedToken = Accounts._hashLoginToken(loginToken);
       const user = Meteor.users.findOne({
         "services.resume.loginTokens.hashedToken": hashedToken
@@ -106,7 +106,8 @@ const resolvers = {
       });
 
       return matched === 1;
-    }
+    },
+    setPassword(obj, { resetToken, newPassword }) {}
   },
   Query: {
     ping: () => "pong"
