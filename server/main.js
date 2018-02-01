@@ -24,6 +24,8 @@ const typeDefs = `
     createUser(email: String!, password: HashedPassword!): LoginResponse
     loginWithPassword(email: String!, password: HashedPassword!): LoginResponse
     logout(loginToken: String!): Boolean
+    resetPassword(resetToken: String!, newPassword: HashedPassword!)
+    resetToken(email: String!): String!
   }
 
   type Query {
@@ -74,11 +76,6 @@ const resolvers = {
       const userId = Accounts.createUser({ email, password });
       return newLoginToken(userId);
     },
-    generateResetToken(obj, { email }) {
-      const user = Accounts.findUserByEmail(email);
-      const { token } = Accounts.generateResetToken(user._id, email, "reset");
-      return token;
-    },
     loginWithPassword(obj, { email, password }) {
       const user = Accounts.findUserByEmail(email);
       if (!user) {
@@ -107,7 +104,24 @@ const resolvers = {
 
       return matched === 1;
     },
-    setPassword(obj, { resetToken, newPassword }) {}
+    resetPassword(obj, { resetToken, newPassword }) {
+      const user = Meteor.users.findOne({
+        "services.password.reset.token": resetToken
+      });
+      if (!user) {
+        throw new Error("Couldn't find user");
+      }
+
+      // Although the documentation says that `setPassword`
+      // expects the `newPassword` parameter to be a string, it
+      // also works with a hashed password
+      Accounts.setPassword(user._id, newPassword);
+    },
+    resetToken(obj, { email }) {
+      const user = Accounts.findUserByEmail(email);
+      const { token } = Accounts.generateResetToken(user._id, email, "reset");
+      return token;
+    }
   },
   Query: {
     ping: () => "pong"
