@@ -24,7 +24,7 @@ const typeDefs = `
     createUser(email: String!, password: HashedPassword!): LoginResponse
     loginWithPassword(email: String!, password: HashedPassword!): LoginResponse
     logout(loginToken: String!): Boolean
-    resetPassword(resetToken: String!, newPassword: HashedPassword!)
+    resetPassword(resetToken: String!, newPassword: HashedPassword!): Boolean
     resetToken(email: String!): String!
   }
 
@@ -115,7 +115,13 @@ const resolvers = {
       // Although the documentation says that `setPassword`
       // expects the `newPassword` parameter to be a string, it
       // also works with a hashed password
-      Accounts.setPassword(user._id, newPassword);
+      try {
+        Accounts.setPassword(user._id, newPassword);
+        return true;
+      } catch (err) {
+        console.log(err);
+        return false;
+      }
     },
     resetToken(obj, { email }) {
       const user = Accounts.findUserByEmail(email);
