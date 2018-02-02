@@ -109,7 +109,7 @@ const resolvers = {
         "services.password.reset.token": resetToken
       });
       if (!user) {
-        throw new Error("Couldn't find user");
+        throw new Error("Couldn't find user associated with reset token");
       }
 
       // Although the documentation says that `setPassword`
@@ -125,6 +125,10 @@ const resolvers = {
     },
     resetToken(obj, { email }) {
       const user = Accounts.findUserByEmail(email);
+      if (!user) {
+        throw new Error("Couldn't find user");
+      }
+
       const { token } = Accounts.generateResetToken(user._id, email, "reset");
       return token;
     }
